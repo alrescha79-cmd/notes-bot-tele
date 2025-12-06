@@ -1,0 +1,26 @@
+{
+  "name": "telegram-notes-bot",
+  "version": "1.0.0",
+  "description": "Telegram Notes Bot with Bun, TypeScript, SQLite, Drizzle ORM",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "db:migrate": "bun run src/db/migrate.ts",
+    "db:push": "bunx drizzle-kit push:sqlite",
+    "db:generate": "bunx drizzle-kit generate:sqlite"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.30.0",
+    "grammy": "^1.24.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "drizzle-kit": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

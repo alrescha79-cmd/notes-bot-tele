@@ -1,0 +1,12 @@
+node_modules/
+.bun/
+dist/
+build/
+.env
+.env.local
+notes.db
+notes.db-wal
+notes.db-shm
+*.log
+.DS_Store
+.github/

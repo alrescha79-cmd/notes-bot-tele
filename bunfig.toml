@@ -1,0 +1,6 @@
+[build]
+target = "bun"
+
+[runtime]
+# Use Bun runtime
+autoInstall = true
