@@ -215,12 +215,12 @@ telegram-notes-bot/
 
 ## 🚀 Deployment
 
-### Deploy ke Server (VPS/Heroku/Railway)
+### Option 1: Deploy ke VPS (Polling Mode)
 
 1. **Copy project ke server:**
    ```bash
-   git clone <your-repo> telegram-notes-bot
-   cd telegram-notes-bot
+   git clone https://github.com/alrescha79-cmd/notes-bot-tele.git
+   cd notes-bot-tele
    ```
 
 2. **Install Bun di server:**
@@ -231,17 +231,17 @@ telegram-notes-bot/
 3. **Setup environment:**
    ```bash
    cp .env.example .env
-   # Edit .env dengan token Telegram Anda
-   nano .env
+   nano .env  # Edit dengan token Telegram Anda
    ```
 
 4. **Run bot:**
    ```bash
    bun install
-   bun run start  # Production mode
+   bun run db:migrate
+   bun run start
    ```
 
-5. **Keep bot running (gunakan PM2 atau screen):**
+5. **Keep bot running:**
    ```bash
    # Dengan screen
    screen -S telegram-bot
@@ -255,6 +255,83 @@ telegram-notes-bot/
 
 ---
 
+### Option 2: Deploy ke Cloudflare Workers (Webhook Mode)
+
+Serverless deployment dengan Cloudflare Workers dan D1 database.
+
+#### Prasyarat
+- [Cloudflare Account](https://dash.cloudflare.com/sign-up) (gratis)
+- Node.js / Bun untuk wrangler CLI
+
+#### Step 1: Login ke Cloudflare
+
+```bash
+npx wrangler login
+```
+
+Browser akan terbuka untuk autentikasi.
+
+#### Step 2: Buat D1 Database
+
+```bash
+bun run deploy:d1:create
+```
+
+Output akan menampilkan `database_id`. **Copy ID ini!**
+
+#### Step 3: Update wrangler.toml
+
+Edit `wrangler.toml` dan ganti `YOUR_D1_DATABASE_ID`:
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "notes-db"
+database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Paste ID di sini
+```
+
+#### Step 4: Jalankan Migrasi D1
+
+```bash
+bun run deploy:d1:migrate
+```
+
+#### Step 5: Set Bot Token Secret
+
+```bash
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+```
+
+Masukkan token bot Anda saat diminta.
+
+#### Step 6: Deploy Worker
+
+```bash
+bun run deploy
+```
+
+Output akan menampilkan URL worker, contoh:
+```
+https://telegram-notes-bot.YOUR_SUBDOMAIN.workers.dev
+```
+
+#### Step 7: Set Webhook Telegram
+
+Buka URL di browser untuk mengaktifkan webhook:
+
+```
+https://telegram-notes-bot.YOUR_SUBDOMAIN.workers.dev/set-webhook
+```
+
+Atau gunakan curl:
+```bash
+curl "https://telegram-notes-bot.YOUR_SUBDOMAIN.workers.dev/set-webhook"
+```
+
+✅ **Selesai!** Bot sekarang berjalan di Cloudflare Workers.
+
+---
+
 ## 📝 Scripts
 
 ```json
@@ -263,11 +340,21 @@ telegram-notes-bot/
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "db:migrate": "bun run src/db/migrate.ts",
-    "db:push": "bunx drizzle-kit push:sqlite",
-    "db:generate": "bunx drizzle-kit generate:sqlite"
+    "deploy": "wrangler deploy",
+    "deploy:d1:create": "wrangler d1 create notes-db",
+    "deploy:d1:migrate": "wrangler d1 execute notes-db --remote --file=./migrations/0001_init.sql"
   }
 }
 ```
+
+| Script | Fungsi |
+|--------|--------|
+| `dev` | Development dengan hot reload |
+| `start` | Production mode (polling) |
+| `db:migrate` | Migrasi database lokal |
+| `deploy` | Deploy ke Cloudflare Workers |
+| `deploy:d1:create` | Buat D1 database baru |
+| `deploy:d1:migrate` | Jalankan migrasi D1 |
 
 ---
 

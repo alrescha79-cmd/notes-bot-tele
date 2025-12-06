@@ -6,14 +6,14 @@ Bot Telegram untuk mengelola catatan dengan fitur tambah, tampilkan, edit, dan h
 
 ## 📋 Fitur
 
-✅ **Tambah Catatan Interaktif** - Flow step-by-step: judul → isi catatan
-✅ **Tampilkan Catatan** - Lihat daftar judul catatan dengan `/list`
-✅ **Detail View** - Klik judul untuk lihat detail dengan tombol Edit/Hapus
-✅ **Edit Catatan** - Edit catatan dengan mode inline
-✅ **Hapus Catatan** - Hapus catatan dengan konfirmasi
-✅ **Hot Reload** - Perubahan kode otomatis reload tanpa restart
-✅ **Database SQLite** - Data tersimpan secara persisten
-✅ **Session Management** - Tracking status add/edit user
+* ✅ **Tambah Catatan Interaktif** - Flow step-by-step: judul → isi catatan
+* ✅ **Tampilkan Catatan** - Lihat daftar judul catatan dengan `/list`
+* ✅ **Detail View** - Klik judul untuk lihat detail dengan tombol Edit/Hapus
+* ✅ **Edit Catatan** - Edit catatan dengan mode inline
+* ✅ **Hapus Catatan** - Hapus catatan dengan konfirmasi
+* ✅ **Hot Reload** - Perubahan kode otomatis reload tanpa restart
+* ✅ **Database SQLite** - Data tersimpan secara persisten
+* ✅ **Session Management** - Tracking status add/edit user
 
 ---
 
@@ -78,7 +78,8 @@ telegram-notes-bot/
 
 ```bash
 # Clone atau buka proyek
-cd telegram-notes-bot
+git clone https://github.com/alrescha79-cmd/notes-bot-tele.git
+cd notes-bot-tele
 
 # Install dependencies
 bun install
