@@ -7,25 +7,11 @@ type Env = {
 };
 
 type SessionData = {
-    [key: string]: {
-        editingId: number | null;
-        addingStep: "idle" | "title" | "content";
-        pendingTitle: string | null;
-    };
+    userId: string;
+    addingStep: "idle" | "title" | "content";
+    pendingTitle: string | null;
+    editingId: number | null;
 };
-
-const sessions: SessionData = {};
-
-function getSession(userId: string) {
-    if (!sessions[userId]) {
-        sessions[userId] = {
-            editingId: null,
-            addingStep: "idle",
-            pendingTitle: null,
-        };
-    }
-    return sessions[userId];
-}
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -37,7 +23,51 @@ app.post("/webhook", async (c) => {
     const bot = new Bot(c.env.TELEGRAM_BOT_TOKEN);
     const db = c.env.DB;
 
-    // Helper functions for D1
+    // Session helper functions for D1
+    async function getSession(userId: string): Promise<SessionData> {
+        const result = await db
+            .prepare("SELECT * FROM user_sessions WHERE userId = ?")
+            .bind(userId)
+            .first();
+
+        if (result) {
+            return {
+                userId: result.userId as string,
+                addingStep: (result.addingStep as "idle" | "title" | "content") || "idle",
+                pendingTitle: result.pendingTitle as string | null,
+                editingId: result.editingId as number | null,
+            };
+        }
+
+        // Create new session if not exists
+        await db
+            .prepare("INSERT INTO user_sessions (userId, addingStep, pendingTitle, editingId, updatedAt) VALUES (?, ?, ?, ?, ?)")
+            .bind(userId, "idle", null, null, new Date().toISOString())
+            .run();
+
+        return {
+            userId,
+            addingStep: "idle",
+            pendingTitle: null,
+            editingId: null,
+        };
+    }
+
+    async function updateSession(userId: string, data: Partial<SessionData>) {
+        const current = await getSession(userId);
+        await db
+            .prepare("UPDATE user_sessions SET addingStep = ?, pendingTitle = ?, editingId = ?, updatedAt = ? WHERE userId = ?")
+            .bind(
+                data.addingStep !== undefined ? data.addingStep : current.addingStep,
+                data.pendingTitle !== undefined ? data.pendingTitle : current.pendingTitle,
+                data.editingId !== undefined ? data.editingId : current.editingId,
+                new Date().toISOString(),
+                userId
+            )
+            .run();
+    }
+
+    // Helper functions for D1 notes
     async function addNote(userId: string, title: string, content: string) {
         await db
             .prepare("INSERT INTO notes (userId, title, content, createdAt) VALUES (?, ?, ?, ?)")
@@ -95,9 +125,10 @@ app.post("/webhook", async (c) => {
         const userId = ctx.from?.id.toString();
         if (!userId) return;
 
-        const session = getSession(userId);
-        session.addingStep = "title";
-        session.pendingTitle = null;
+        await updateSession(userId, {
+            addingStep: "title",
+            pendingTitle: null,
+        });
 
         await ctx.reply(
             "📝 *Tambah Catatan Baru*\n\nSilakan masukkan *judul* catatan:\n\n_(ketik /cancel untuk batal)_",
@@ -137,10 +168,11 @@ app.post("/webhook", async (c) => {
         const userId = ctx.from?.id.toString();
         if (!userId) return;
 
-        const session = getSession(userId);
-        session.editingId = null;
-        session.addingStep = "idle";
-        session.pendingTitle = null;
+        await updateSession(userId, {
+            editingId: null,
+            addingStep: "idle",
+            pendingTitle: null,
+        });
 
         await ctx.reply("❌ Dibatalkan.");
     });
@@ -150,8 +182,6 @@ app.post("/webhook", async (c) => {
         const data = ctx.callbackQuery?.data || "";
         const userId = ctx.from?.id.toString();
         if (!userId) return;
-
-        const session = getSession(userId);
 
         if (data.startsWith("view_")) {
             const noteId = parseInt(data.replace("view_", ""));
@@ -208,7 +238,7 @@ app.post("/webhook", async (c) => {
             }
         } else if (data.startsWith("edit_")) {
             const noteId = parseInt(data.replace("edit_", ""));
-            session.editingId = noteId;
+            await updateSession(userId, { editingId: noteId });
             await ctx.answerCallbackQuery();
             await ctx.reply(`✏️ Mode Edit Catatan #${noteId}\n\nKirimkan teks baru:\n\n_(ketik /cancel untuk batal)_`, {
                 parse_mode: "Markdown",
@@ -244,11 +274,13 @@ app.post("/webhook", async (c) => {
         const userId = ctx.from?.id.toString();
         if (!userId || text.startsWith("/")) return;
 
-        const session = getSession(userId);
+        const session = await getSession(userId);
 
         if (session.addingStep === "title") {
-            session.pendingTitle = text.trim();
-            session.addingStep = "content";
+            await updateSession(userId, {
+                pendingTitle: text.trim(),
+                addingStep: "content",
+            });
             await ctx.reply(
                 `📌 Judul: *${text.trim()}*\n\nSekarang masukkan *isi* catatan:\n\n_(ketik /cancel untuk batal)_`,
                 { parse_mode: "Markdown" }
@@ -257,28 +289,32 @@ app.post("/webhook", async (c) => {
             const title = session.pendingTitle;
             if (!title) {
                 await ctx.reply("❌ Terjadi kesalahan. Coba /add lagi.");
-                session.addingStep = "idle";
+                await updateSession(userId, { addingStep: "idle" });
                 return;
             }
 
             try {
                 await addNote(userId, title, text.trim());
-                session.addingStep = "idle";
-                session.pendingTitle = null;
+                await updateSession(userId, {
+                    addingStep: "idle",
+                    pendingTitle: null,
+                });
                 await ctx.reply(`✅ Catatan berhasil ditambahkan!\n\n📌 *${title}*\n${text.trim()}`, {
                     parse_mode: "Markdown",
                 });
             } catch (error) {
                 console.error("Error adding note:", error);
                 await ctx.reply("❌ Gagal menambahkan catatan.");
-                session.addingStep = "idle";
-                session.pendingTitle = null;
+                await updateSession(userId, {
+                    addingStep: "idle",
+                    pendingTitle: null,
+                });
             }
         } else if (session.editingId !== null) {
             try {
                 await updateNote(session.editingId, text.trim());
                 const noteId = session.editingId;
-                session.editingId = null;
+                await updateSession(userId, { editingId: null });
                 await ctx.reply(`✅ Catatan #${noteId} berhasil diperbarui!\n\n"${text.trim()}"`);
             } catch (error) {
                 console.error("Error updating note:", error);

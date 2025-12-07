@@ -10,3 +10,5 @@ notes.db-shm
 *.log
 .DS_Store
 .github/
+.wrangler/
+wrangler.toml

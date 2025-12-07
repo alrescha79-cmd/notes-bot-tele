@@ -14,6 +14,9 @@ Bot Telegram untuk mengelola catatan dengan fitur tambah, tampilkan, edit, dan h
 * ✅ **Hot Reload** - Perubahan kode otomatis reload tanpa restart
 * ✅ **Database SQLite** - Data tersimpan secara persisten
 * ✅ **Session Management** - Tracking status add/edit user
+* ✅ **Cloudflare Workers** - Deploy serverless dengan D1 database
+
+> 📖 **Panduan lengkap setup & deployment:** [SETUP.md](SETUP.md)
 
 ---
 
