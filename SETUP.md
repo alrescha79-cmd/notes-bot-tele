@@ -279,9 +279,14 @@ bun run deploy:d1:create
 
 Output akan menampilkan `database_id`. **Copy ID ini!**
 
-#### Step 3: Update wrangler.toml
+#### Step 3: Setup wrangler.toml
 
-Edit `wrangler.toml` dan ganti `YOUR_D1_DATABASE_ID`:
+```bash
+# Copy template ke wrangler.toml
+cp wrangler.toml.example wrangler.toml
+```
+
+Edit `wrangler.toml` dan ganti `YOUR_D1_DATABASE_ID` dengan ID dari step sebelumnya:
 
 ```toml
 [[d1_databases]]
@@ -290,10 +295,16 @@ database_name = "notes-db"
 database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"  # Paste ID di sini
 ```
 
+> ⚠️ **Catatan:** File `wrangler.toml` sudah di-gitignore karena berisi kredensial. Jangan commit file ini ke git!
+
 #### Step 4: Jalankan Migrasi D1
 
 ```bash
+# Migrasi tabel notes
 bun run deploy:d1:migrate
+
+# Migrasi tabel sessions
+bun run deploy:d1:migrate:sessions
 ```
 
 #### Step 5: Set Bot Token Secret
@@ -354,7 +365,8 @@ curl "https://telegram-notes-bot.YOUR_SUBDOMAIN.workers.dev/set-webhook"
 | `db:migrate` | Migrasi database lokal |
 | `deploy` | Deploy ke Cloudflare Workers |
 | `deploy:d1:create` | Buat D1 database baru |
-| `deploy:d1:migrate` | Jalankan migrasi D1 |
+| `deploy:d1:migrate` | Jalankan migrasi tabel notes D1 |
+| `deploy:d1:migrate:sessions` | Jalankan migrasi tabel sessions D1 |
 
 ---
 

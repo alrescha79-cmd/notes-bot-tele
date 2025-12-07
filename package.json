@@ -11,7 +11,8 @@
     "db:generate": "bunx drizzle-kit generate:sqlite",
     "deploy": "wrangler deploy",
     "deploy:d1:create": "wrangler d1 create notes-db",
-    "deploy:d1:migrate": "wrangler d1 execute notes-db --remote --file=./migrations/0001_init.sql"
+    "deploy:d1:migrate": "wrangler d1 execute notes-db --remote --file=./migrations/0001_init.sql",
+    "deploy:d1:migrate:sessions": "wrangler d1 execute notes-db --remote --file=./migrations/0002_sessions.sql"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.0",

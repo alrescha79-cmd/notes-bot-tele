@@ -5,4 +5,4 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "notes-db"
-database_id = "df6daeb0-eb3c-40bb-9d68-e9e371485386"
+database_id = "YOUR_D1_DATABASE_ID"
